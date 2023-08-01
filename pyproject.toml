@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "transcribe"
+version = "0.1.0"
+description = "Web interface WhisperAI wrapper for text-to-speech."
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = ["Private :: Do Not Upload"]
+dependencies = [
+    "fastapi[all]",
+    "openai",
+    "pydub",
+]
+# Also requires libav and ffmpeg on system
+# ffmpeg and libavcodec-extra (debian)
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "pip-tools",
+    "pytest",
+    "ruff",
+]
+
+[tool.black]
+target-version = ['py311']
+
+[tool.ruff]
+select = [
+    "E",
+    "W",
+    "F",
+    "I",
+    "C",
+    "B",
+]
+target-version = 'py311'
