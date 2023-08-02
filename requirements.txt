@@ -4,6 +4,8 @@
 #
 #    pip-compile --output-file=requirements.txt pyproject.toml
 #
+aiofiles==23.1.0
+    # via transcribe (pyproject.toml)
 aiohttp==3.8.5
     # via openai
 aiosignal==1.3.1

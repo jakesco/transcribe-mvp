@@ -14,8 +14,7 @@ from .transcribe import transcribe_file
 settings = app_settings()
 
 # Ensure media and transcription directories exist
-Path(settings.media_dir).mkdir(parents=True, exist_ok=True)
-Path(settings.transcript_dir).mkdir(parents=True, exist_ok=True)
+Path(settings.media).mkdir(parents=True, exist_ok=True)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -27,19 +26,19 @@ async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
-@app.get("/transcriptions", response_class=HTMLResponse, include_in_schema=False)
-async def transcriptions(request: Request):
-    files = await scandir(settings.transcript_dir)
-    transcriptions = [file.name for file in files if file.is_file()]
+@app.get("/jobs", response_class=HTMLResponse, include_in_schema=False)
+async def jobs(request: Request):
+    files = await scandir(settings.media)
+    jobs = [file.name for file in files if file.is_file()]
     return templates.TemplateResponse(
-        "transcriptions.html", {"request": request, "transcriptions": transcriptions}
+        "jobs.html", {"request": request, "jobs": jobs}
     )
 
 
 @app.get("/media/{filename}")
 async def download(filename: str):
     return FileResponse(
-        f"{settings.transcript_dir}/{filename}",
+        f"{settings.media}/{filename}",
         media_type="text/plain",
         filename=filename,
     )
@@ -50,15 +49,17 @@ async def transcribe(
     request: Request, file: Annotated[UploadFile, File()], tasks: BackgroundTasks
 ):
     if file is not None:
-        filepath = Path(f"{settings.media_dir}/{file.filename}")
-        async with aiofiles.open(filepath, "wb") as f:
+        destination = Path(f"{settings.media}/{file.filename}")
+        async with aiofiles.open(destination, "wb") as f:
             content = await file.read()
             await f.write(content)
-        tasks.add_task(transcribe_file, filepath)
+        tasks.add_task(transcribe_file, destination)
         message = f"File {file.filename} successfully uploaded"
+        color = "#00FF00"
     else:
         message = "File failed to upload"
+        color = "#FF0000"
 
     return templates.TemplateResponse(
-        "messages.html", {"request": request, "message": message}
+        "messages.html", {"request": request, "message": message, "color": color}
     )

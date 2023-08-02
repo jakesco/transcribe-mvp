@@ -21,7 +21,9 @@
             <input type="submit" value="Transcribe">
         </form>
         <div id="message"></div>
-        <h2>Transcriptions</h2>
-        <div id="transcriptions" hx-get="/transcriptions" hx-trigger="load, every 10s"></div>
+        <section>
+        <h2>Transcripts</h2>
+        <div id="jobs" hx-get="/jobs" hx-trigger="load, every 10s"></div>
+        </section>
     </body>
 </html>

@@ -1,0 +1,20 @@
+<table style="min-width: 100%;">
+    <thead>
+        <tr>
+            <th>Audio</th>
+            <th>Transcript</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for job in jobs %}
+        <td>
+            <a href="/media/{{ transcription }}">
+                {{ job }}
+            </a>
+        </td>
+        <td>Placeholder</td>
+        {% else %}
+        <td colspan="2" style="text-align: center;">No Transcripts</td>
+        {% endfor %}
+    </tbody>
+</table>

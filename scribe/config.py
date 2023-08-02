@@ -11,8 +11,7 @@ class Settings(BaseSettings):
 
     development: bool = False
     log_level: str = "info"
-    media_dir: str = "./media"
-    transcript_dir: str = "./transcriptions"
+    media: str = "./media"
     openai_api_key: str = ""
 
     class Config:
