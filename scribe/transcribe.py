@@ -62,7 +62,6 @@ def transcribe_file(filepath: Path):
         f"{settings.transcript_dir}/{filepath.with_suffix('.txt').name}"
     )
     transcription = transcribe(filepath)
-    print(transcription)
     with open(transcription_path, "w") as f:
         f.write(transcription)
         f.write("\n")
