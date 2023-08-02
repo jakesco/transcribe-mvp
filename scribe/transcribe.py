@@ -1,15 +1,15 @@
 import os
-from io import BufferedReader
-from pathlib import Path
-from typing import Iterator
 import tempfile
-
 from concurrent.futures import ThreadPoolExecutor
+from io import BufferedReader
+from math import ceil
+from pathlib import Path
 
 import openai
 import pydub
 from dotenv import dotenv_values
-from pydub.utils import mediainfo
+
+MAX_FILE_SIZE = 20  # in MB
 
 # from .config import app_settings
 
@@ -27,33 +27,38 @@ def transcribe(audio_file: BufferedReader):
     return transcript
 
 
-def split_audio_file(filepath: Path, segements: int) -> Iterator[BufferedReader]:
+def split_audio_file(filepath: Path, segements: int) -> list[BufferedReader]:
     """Splits audio file into equal segments"""
     audio = pydub.AudioSegment.from_file(filepath)
 
     total_duration = len(audio)
     segment_duration = total_duration // segements
+    segments = []
     for i in range(segements):
         start = i * segment_duration
         end = (i + 1) * segment_duration
         segment = audio[start:end]
 
         temp = tempfile.NamedTemporaryFile(suffix=".mp3")
-        yield segment.export(temp, format="mp3")
-
-
-def main(filepath: str):
-    info = mediainfo(filepath)
-    sec = info["duration"]
-    size = os.path.getsize(filepath) / (1024 * 1024)
-    print(f"Size: {size}MB, Duration: {sec}s")
+        segments.append(segment.export(temp, format="mp3"))
+    return segments
 
 
 if __name__ == "__main__":
     xmas = Path("/home/jake/Music/xmas.m4a")
-    audio_files = split_audio_file(xmas, 5)
-    with ThreadPoolExecutor(max_workers=5) as executor:
-        result = executor.map(transcribe, audio_files)
+    size = os.path.getsize(xmas) / (1024 * 1024)  # in MB
 
-    transcript = " ".join([r['text'] for r in result])
+    if size > MAX_FILE_SIZE:
+        n = ceil(size / MAX_FILE_SIZE)
+        segments = split_audio_file(xmas, n)
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            result = executor.map(transcribe, segments)
+        for seg in segments:
+            seg.close()
+        transcript = "".join([r["text"] for r in result])
+    else:
+        segment = open(xmas, "rb")
+        transcript = transcribe(segment)["text"]
+        segment.close()
+
     print(transcript)
