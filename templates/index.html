@@ -20,6 +20,8 @@
             <input type="file" name="file">
             <input type="submit" value="Transcribe">
         </form>
-        <p id="message"></div>
+        <div id="message"></div>
+        <h2>Transcriptions</h2>
+        <div id="transcriptions" hx-get="/transcriptions" hx-trigger="load, every 10s"></div>
     </body>
 </html>

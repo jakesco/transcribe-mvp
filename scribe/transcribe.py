@@ -7,24 +7,18 @@ from pathlib import Path
 
 import openai
 import pydub
-from dotenv import dotenv_values
+
+from .config import app_settings
 
 MAX_FILE_SIZE = 20  # in MB
 
-# from .config import app_settings
-
-# settings = app_settings()
-
-settings = dotenv_values(".env")
-
-# openai.api_key = settings.openai_api_key
-openai.api_key = settings["OPENAI_API_KEY"]
+settings = app_settings()
 
 
-def transcribe(audio_file: BufferedReader):
-    transcript = openai.Audio.transcribe("whisper-1", audio_file)
-    audio_file.close()
-    return transcript
+def send_file(audio_file: BufferedReader):
+    return openai.Audio.transcribe(
+        "whisper-1", audio_file, api_key=settings.openai_api_key
+    )
 
 
 def split_audio_file(filepath: Path, segements: int) -> list[BufferedReader]:
@@ -44,21 +38,31 @@ def split_audio_file(filepath: Path, segements: int) -> list[BufferedReader]:
     return segments
 
 
-if __name__ == "__main__":
-    xmas = Path("/home/jake/Music/xmas.m4a")
-    size = os.path.getsize(xmas) / (1024 * 1024)  # in MB
-
+def transcribe(filepath: Path) -> str:
+    size = os.path.getsize(filepath) / (1024 * 1024)  # in MB
     if size > MAX_FILE_SIZE:
         n = ceil(size / MAX_FILE_SIZE)
-        segments = split_audio_file(xmas, n)
+        segments = split_audio_file(filepath, n)
         with ThreadPoolExecutor(max_workers=2) as executor:
-            result = executor.map(transcribe, segments)
+            result = executor.map(send_file, segments)
         for seg in segments:
             seg.close()
         transcript = "".join([r["text"] for r in result])
     else:
-        segment = open(xmas, "rb")
-        transcript = transcribe(segment)["text"]
+        segment = open(filepath, "rb")
+        transcript = send_file(segment)["text"]
         segment.close()
 
-    print(transcript)
+    return transcript
+
+
+def transcribe_file(filepath: Path):
+    """Saves transcription to transcripts directory"""
+    transcription_path = Path(
+        f"{settings.transcript_dir}/{filepath.with_suffix('.txt').name}"
+    )
+    transcription = transcribe(filepath)
+    print(transcription)
+    with open(transcription_path, "w") as f:
+        f.write(transcription)
+        f.write("\n")

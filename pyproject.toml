@@ -26,7 +26,12 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-exclude = ["static", "templates", "media"]
+exclude = [
+    "media",
+    "static",
+    "templates",
+    "transcriptions",
+]
 
 [tool.black]
 target-version = ['py311']
