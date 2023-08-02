@@ -1,20 +1,27 @@
 <table style="min-width: 100%;">
     <thead>
-        <tr>
-            <th>Audio</th>
-            <th>Transcript</th>
-        </tr>
+    <tr>
+        <th>Audio</th>
+        <th>Transcript</th>
+    </tr>
     </thead>
     <tbody>
-        {% for job in jobs %}
-        <td>
-            <a href="/media/{{ transcription }}">
-                {{ job }}
-            </a>
-        </td>
-        <td>Placeholder</td>
-        {% else %}
+    {% for job in jobs %}
+        <tr {% if job.status == "Failed" %}style="background: #FF000055"{% endif %}>
+            <td>
+                <a href="{{ job.infile }}">
+                    {{ job.infile.name }}
+                </a>
+            </td>
+            <td>
+                <a href="{{ job.outfile }}">
+                    {{ job.outfile.name }}
+                </a>
+                <span style="margin-left: 1rem;">({{ job.status }})</span>
+            </td>
+        </tr>
+    {% else %}
         <td colspan="2" style="text-align: center;">No Transcripts</td>
-        {% endfor %}
+    {% endfor %}
     </tbody>
 </table>

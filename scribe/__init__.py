@@ -2,21 +2,30 @@ from pathlib import Path
 from typing import Annotated
 
 import aiofiles
-from aiofiles.os import scandir
 from fastapi import BackgroundTasks, FastAPI, File, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from contextlib import asynccontextmanager
 
 from .config import app_settings
-from .transcribe import transcribe_file
+from .transcribe import transcribe_file, get_job_status, job_dump, job_load
 
 settings = app_settings()
 
-# Ensure media and transcription directories exist
-Path(settings.media).mkdir(parents=True, exist_ok=True)
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Ensure media and transcription directories exist
+    Path(settings.media).mkdir(parents=True, exist_ok=True)
+    print("Loading job state")
+    job_load()
+    yield
+    print("Saving job state")
+    job_dump()
+
+
+app = FastAPI(lifespan=lifespan)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
@@ -28,10 +37,8 @@ async def index(request: Request):
 
 @app.get("/jobs", response_class=HTMLResponse, include_in_schema=False)
 async def jobs(request: Request):
-    files = await scandir(settings.media)
-    jobs = [file.name for file in files if file.is_file()]
     return templates.TemplateResponse(
-        "jobs.html", {"request": request, "jobs": jobs}
+        "jobs.html", {"request": request, "jobs": get_job_status()}
     )
 
 

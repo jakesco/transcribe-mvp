@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     development: bool = False
     log_level: str = "info"
     media: str = "./media"
+    job_dump: str = ".jobs"
     openai_api_key: str = ""
 
     class Config:

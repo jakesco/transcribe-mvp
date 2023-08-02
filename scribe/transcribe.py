@@ -1,9 +1,13 @@
+import time
+import pickle
 import os
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from io import BufferedReader
 from math import ceil
 from pathlib import Path
+from enum import StrEnum
+from dataclasses import dataclass
 
 import openai
 import pydub
@@ -14,6 +18,39 @@ MAX_FILE_SIZE = 20  # in MB
 
 settings = app_settings()
 
+
+class JobStatus(StrEnum):
+    RUNNING = "Running"
+    FAILED = "Failed"
+    COMPLETED = "Completed"
+
+
+@dataclass
+class Job:
+    infile: Path
+    status: JobStatus
+    outfile: Path | None = None
+
+
+job_status: list[Job] = []
+
+
+def job_dump():
+    with open(settings.job_dump, "wb") as f:
+        pickle.dump(job_status, f)
+    print(job_status)
+
+
+def job_load():
+    if not os.path.isfile(settings.job_dump):
+        return
+    global job_status
+    with open(settings.job_dump, "rb") as f:
+        job_status = pickle.load(f)
+    print(job_status)
+
+def get_job_status():
+    return job_status
 
 def send_file(audio_file: BufferedReader):
     return openai.Audio.transcribe(
@@ -38,30 +75,39 @@ def split_audio_file(filepath: Path, segements: int) -> list[BufferedReader]:
     return segments
 
 
-def transcribe(filepath: Path) -> str:
-    size = os.path.getsize(filepath) / (1024 * 1024)  # in MB
-    if size > MAX_FILE_SIZE:
-        n = ceil(size / MAX_FILE_SIZE)
-        segments = split_audio_file(filepath, n)
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            result = executor.map(send_file, segments)
-        for seg in segments:
-            seg.close()
-        transcript = "".join([r["text"] for r in result])
-    else:
-        segment = open(filepath, "rb")
-        transcript = send_file(segment)["text"]
-        segment.close()
+def transcribe(job: Job) -> str:
+    try:
+        size = os.path.getsize(job.infile) / (1024 * 1024)  # in MB
+        if size > MAX_FILE_SIZE:
+            n = ceil(size / MAX_FILE_SIZE)
+            segments = split_audio_file(job.infile, n)
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                result = executor.map(send_file, segments)
+            for seg in segments:
+                seg.close()
+            transcript = "".join([r["text"] for r in result])
+        else:
+            segment = open(job.infile, "rb")
+            transcript = send_file(segment)["text"]
+            segment.close()
+    except Exception as e:
+        job.status = JobStatus.FAILED
+        raise e
 
     return transcript
 
 
 def transcribe_file(filepath: Path):
     """Saves transcription to transcripts directory"""
-    transcription_path = Path(
-        f"{settings.transcript_dir}/{filepath.with_suffix('.txt').name}"
+    transcript_path = Path(
+        f"{settings.media}/{filepath.with_suffix('.txt').name}"
     )
-    transcription = transcribe(filepath)
-    with open(transcription_path, "w") as f:
+    new_job = Job(filepath, JobStatus.RUNNING, transcript_path)
+    job_status.append(new_job)
+    #transcription = transcribe(filepath)
+    time.sleep(10)
+    transcription = "This is a test file"
+    new_job.status = JobStatus.COMPLETED
+    with open(transcript_path, "w") as f:
         f.write(transcription)
         f.write("\n")
