@@ -106,6 +106,8 @@ pydantic-extra-types==2.0.0
     # via fastapi
 pydantic-settings==2.0.2
     # via fastapi
+pydub==0.25.1
+    # via transcribe (pyproject.toml)
 pyproject-hooks==1.0.0
     # via build
 pytest==7.4.0

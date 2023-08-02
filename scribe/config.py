@@ -14,7 +14,6 @@ class Settings(BaseSettings):
     media_dir: str = "./media"
     openai_api_key: str = ""
 
-
     class Config:
         env_file = ".env"
 

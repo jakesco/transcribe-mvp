@@ -1,5 +1,6 @@
 from typing import Annotated
-from fastapi import FastAPI, Request, File, Form, UploadFile
+
+from fastapi import FastAPI, File, Request, UploadFile
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -21,5 +22,6 @@ async def index(request: Request):
 @app.post("/")
 async def transcribe(request: Request, file: Annotated[UploadFile, File()]):
     message = f"{file.filename} uploaded" if file else "File not uploaded"
-    return templates.TemplateResponse("messages.html", {"request": request, "message": message})
-
+    return templates.TemplateResponse(
+        "messages.html", {"request": request, "message": message}
+    )

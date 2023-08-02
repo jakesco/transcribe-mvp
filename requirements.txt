@@ -82,6 +82,8 @@ pydantic-extra-types==2.0.0
     # via fastapi
 pydantic-settings==2.0.2
     # via fastapi
+pydub==0.25.1
+    # via transcribe (pyproject.toml)
 python-dotenv==1.0.0
     # via
     #   pydantic-settings
