@@ -1,13 +1,14 @@
-import time
-import pickle
+import logging
 import os
+import pickle
 import tempfile
+import time
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import dataclass
+from enum import StrEnum
 from io import BufferedReader
 from math import ceil
 from pathlib import Path
-from enum import StrEnum
-from dataclasses import dataclass
 
 import openai
 import pydub
@@ -17,6 +18,8 @@ from .config import app_settings
 MAX_FILE_SIZE = 20  # in MB
 
 settings = app_settings()
+
+logger = logging.getLogger("scribe")
 
 
 class JobStatus(StrEnum):
@@ -35,22 +38,24 @@ class Job:
 job_status: list[Job] = []
 
 
+def get_job_status():
+    return job_status
+
+
 def job_dump():
+    logger.info("Saving job status")
     with open(settings.job_dump, "wb") as f:
         pickle.dump(job_status, f)
-    print(job_status)
 
 
 def job_load():
     if not os.path.isfile(settings.job_dump):
         return
+    logger.info("Loading job status")
     global job_status
     with open(settings.job_dump, "rb") as f:
         job_status = pickle.load(f)
-    print(job_status)
 
-def get_job_status():
-    return job_status
 
 def send_file(audio_file: BufferedReader):
     return openai.Audio.transcribe(
@@ -80,6 +85,9 @@ def transcribe(job: Job) -> str:
         size = os.path.getsize(job.infile) / (1024 * 1024)  # in MB
         if size > MAX_FILE_SIZE:
             n = ceil(size / MAX_FILE_SIZE)
+            logger.info(
+                f"File {job.infile.name} is larger than 20MB. Splitting into {n} segments"
+            )
             segments = split_audio_file(job.infile, n)
             with ThreadPoolExecutor(max_workers=2) as executor:
                 result = executor.map(send_file, segments)
@@ -99,12 +107,17 @@ def transcribe(job: Job) -> str:
 
 def transcribe_file(filepath: Path):
     """Saves transcription to transcripts directory"""
-    transcript_path = Path(
-        f"{settings.media}/{filepath.with_suffix('.txt').name}"
-    )
+    transcript_path = Path(f"{settings.media}/{filepath.with_suffix('.txt').name}")
     new_job = Job(filepath, JobStatus.RUNNING, transcript_path)
     job_status.append(new_job)
-    transcription = transcribe(new_job)
+    logger.info(f"Submitting {new_job.infile.name} for transcription")
+    if settings.development:
+        logger.warning("Development mode; skipping API call")
+        transcription = "Development Mode Transcript"
+        time.sleep(5)
+    else:
+        transcription = transcribe(new_job)
+    logger.info(f"Transcript of {new_job.infile.name} complete")
     new_job.status = JobStatus.COMPLETED
     with open(transcript_path, "w") as f:
         f.write(transcription)

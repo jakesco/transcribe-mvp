@@ -1,0 +1,23 @@
+<form id="form" hx-post="/"
+      hx-encoding="multipart/form-data"
+      hx-swap="outerHTML"
+      hx-indicator="#indicator"
+      hx-ext="disable-element"
+      hx-disable-element="#submit"
+      >
+    <input type="file" name="file">
+    <input id="submit" type="submit" value="Transcribe">
+    <progress id="indicator" class="htmx-indicator" min="0" max="100"></progress>
+    <div id="message" hx-ext="remove-me">
+        {% if message %}
+        <p remove-me="5s" style="color: {{ color }}">{{ message }}</p>
+        {% endif %}
+    </div>
+</form>
+
+<script>
+    htmx.on('#form', 'htmx:xhr:progress', function(evt) {
+        htmx.find('#indicator').setAttribute('value', evt.detail.loaded/evt.detail.total * 100)
+    });
+</script>
+

@@ -14,17 +14,12 @@
 
         <script src="{{ url_for('static', path='htmx.min.js') }}"></script>
         <script src="{{ url_for('static', path='remove-me.js') }}"></script>
+        <script src="{{ url_for('static', path='disable-element.js') }}"></script>
     </head>
     <body>
         <h1>Transcribe Audio</h1>
         <p>Upload a file</p>
-        <form hx-post="/"
-              hx-encoding="multipart/form-data"
-              hx-target="#message">
-            <input type="file" name="file">
-            <input type="submit" value="Transcribe">
-        </form>
-        <div id="message" hx-ext="remove-me"></div>
+        {% include 'form.html' %}
         <section>
         <h2>Transcripts</h2>
         <div id="jobs" hx-get="/jobs" hx-trigger="load, every 3s, submit"></div>

@@ -14,9 +14,13 @@
                 </a>
             </td>
             <td>
+                {% if job.status == "Completed" %}
                 <a href="{{ job.outfile }}">
                     {{ job.outfile.name }}
                 </a>
+                {% else %}
+                <span>{{ job.outfile.name }}<span>
+                {% endif %}
                 <span style="margin-left: 1rem;">({{ job.status }})</span>
             </td>
         </tr>

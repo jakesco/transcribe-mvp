@@ -1,3 +1,6 @@
+import logging
+from contextlib import asynccontextmanager
+from logging.config import dictConfig
 from pathlib import Path
 from typing import Annotated
 
@@ -6,11 +9,13 @@ from fastapi import BackgroundTasks, FastAPI, File, Request, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from contextlib import asynccontextmanager
 
-from .config import app_settings
-from .transcribe import transcribe_file, get_job_status, job_dump, job_load
+from .config import app_settings, log_config
+from .transcribe import get_job_status, job_dump, job_load, transcribe_file
 
+dictConfig(log_config)
+
+logger = logging.getLogger("scribe")
 settings = app_settings()
 
 
@@ -18,10 +23,8 @@ settings = app_settings()
 async def lifespan(app: FastAPI):
     # Ensure media and transcription directories exist
     Path(settings.media).mkdir(parents=True, exist_ok=True)
-    print("Loading job state")
     job_load()
     yield
-    print("Saving job state")
     job_dump()
 
 
@@ -68,5 +71,5 @@ async def transcribe(
         color = "#FF0000"
 
     return templates.TemplateResponse(
-        "messages.html", {"request": request, "message": message, "color": color}
+        "form.html", {"request": request, "message": message, "color": color}
     )
