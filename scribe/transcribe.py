@@ -104,9 +104,7 @@ def transcribe_file(filepath: Path):
     )
     new_job = Job(filepath, JobStatus.RUNNING, transcript_path)
     job_status.append(new_job)
-    #transcription = transcribe(filepath)
-    time.sleep(10)
-    transcription = "This is a test file"
+    transcription = transcribe(new_job)
     new_job.status = JobStatus.COMPLETED
     with open(transcript_path, "w") as f:
         f.write(transcription)
